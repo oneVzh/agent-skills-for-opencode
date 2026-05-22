@@ -2,28 +2,24 @@
 description: Run the pre-launch checklist via parallel fan-out to specialist personas, then synthesize a go/no-go decision
 ---
 
-Invoke the agent-skills:shipping-and-launch skill.
+Invoke the shipping-and-launch skill.
 
 `/ship` is a **fan-out orchestrator**. It runs three specialist personas in parallel against the current change, then merges their reports into a single go/no-go decision with a rollback plan. The personas operate independently — no shared state, no ordering — which is what makes parallel execution safe and useful here.
 
 ## Phase A — Parallel fan-out
 
-Spawn three subagents concurrently using the Agent tool. **Issue all three Agent tool calls in a single assistant turn so they execute in parallel** — sequential calls defeat the purpose of this command.
+Spawn three subagents concurrently using the `task` tool. **Issue all three `task` tool calls in a single assistant turn so they execute in parallel** — sequential calls defeat the purpose of this command.
 
-In Claude Code, each call passes `subagent_type` matching the persona's `name` field:
+Each call passes `subagent_type` matching the persona's `name` field:
 
 1. **`code-reviewer`** — Run a five-axis review (correctness, readability, architecture, security, performance) on the staged changes or recent commits. Output the standard review template.
 2. **`security-auditor`** — Run a vulnerability and threat-model pass. Check OWASP Top 10, secrets handling, auth/authz, dependency CVEs. Output the standard audit report.
 3. **`test-engineer`** — Analyze test coverage for the change. Identify gaps in happy path, edge cases, error paths, and concurrency scenarios. Output the standard coverage analysis.
 
-In other harnesses without an Agent tool, invoke each persona's system prompt sequentially and treat their outputs as if returned in parallel — the merge phase still works.
-
-Constraints (from Claude Code's subagent model):
+Constraints:
 - Subagents cannot spawn other subagents — do not let one persona delegate to another.
 - Each subagent gets its own context window and returns only its report to this main session.
-- If you need teammates that talk to each other instead of just reporting back, use Claude Code Agent Teams and reference these personas as teammate types (see `references/orchestration-patterns.md`).
-
-**Persona resolution.** If you've defined your own `code-reviewer`, `security-auditor`, or `test-engineer` in `.claude/agents/` or `~/.claude/agents/`, those take precedence over this plugin's versions — `/ship` picks up your customizations automatically. This is intentional: plugin subagents sit at the bottom of Claude Code's scope priority table, so user-level definitions win by design.
+- Personas from the global `~/.config/opencode/agents/` are used by default. Project-local `agents/` definitions take precedence over global ones.
 
 ## Phase B — Merge in main context
 

@@ -1,6 +1,6 @@
 # Agent Personas
 
-Specialist personas that play a single role with a single perspective. Each persona is a Markdown file consumed as a system prompt by your harness (Claude Code, Cursor, Copilot, etc.).
+Specialist personas that play a single role with a single perspective. Each persona is a Markdown file consumed as a system prompt by your AI coding agent harness.
 
 | Persona | Role | Best for |
 |---------|------|----------|
@@ -40,7 +40,7 @@ Pick this only when **independent** investigations can run in parallel and produ
 
 - `/ship` → fans out to `code-reviewer` + `security-auditor` + `test-engineer` in parallel, then synthesizes their reports into a go/no-go decision
 
-This is the only orchestration pattern this repo endorses. See [references/orchestration-patterns.md](../references/orchestration-patterns.md) for the full pattern catalog and anti-patterns.
+This is the only orchestration pattern this configuration endorses. See [references/orchestration-patterns.md](../references/orchestration-patterns.md) for the full pattern catalog and anti-patterns.
 
 ## Decision matrix
 
@@ -54,7 +54,7 @@ Is the work a single perspective on a single artifact?
 
 ## Worked example: valid orchestration
 
-`/ship` is the canonical fan-out orchestrator in this repo:
+`/ship` is the canonical fan-out orchestrator in this configuration:
 
 ```
 /ship
@@ -96,20 +96,19 @@ Why this fails:
 ## Rules for personas
 
 1. A persona is a single role with a single output format. If you find yourself adding a second role, create a second persona.
-2. **Personas do not invoke other personas.** Composition is the job of slash commands or the user. On Claude Code this is also a hard platform constraint — *"subagents cannot spawn other subagents"* — so the rule is enforced for you.
+2. **Personas do not invoke other personas.** Composition is the job of slash commands or the user. This is a strict platform constraint — subagents cannot spawn other subagents.
 3. A persona may invoke skills (the *how*).
 4. Every persona file ends with a "Composition" block stating where it fits.
 
-## Claude Code interop
+## OpenCode Subagents
 
-The personas in this repo are designed to work as Claude Code subagents and as Agent Teams teammates without modification:
+The personas in this directory are designed to work as OpenCode subagents via the `task` tool:
 
-- **As subagents:** auto-discovered when this plugin is enabled (no path config needed). Use the Agent tool with `subagent_type: code-reviewer` (or `security-auditor`, `test-engineer`). `/ship` is the canonical example.
-- **As Agent Teams teammates** (experimental, requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`): reference the same persona name when spawning a teammate. The persona's body is **appended to** the teammate's system prompt as additional instructions (not a replacement), so your persona text sits on top of the team-coordination instructions the lead installs (SendMessage, task-list tools, etc.).
+- **As subagents:** auto-discovered from `~/.config/opencode/agents/` and project-local `agents/` directories. Use the `task` tool with `subagent_type: code-reviewer` (or `security-auditor`, `test-engineer`). `/ship` is the canonical example.
+- Project-local persona definitions take precedence over global ones. You can override a global persona by creating a file with the same name in your project's `agents/` directory.
+- Subagents only report results back to the main agent.
 
-Subagents only report results back to the main agent. Agent Teams let teammates message each other directly. Use subagents when reports are enough; use Agent Teams when sub-agents need to challenge each other's findings (e.g. competing-hypothesis debugging). See [references/orchestration-patterns.md](../references/orchestration-patterns.md) for the full mapping.
-
-Plugin agents do not support `hooks`, `mcpServers`, or `permissionMode` frontmatter — those fields are silently ignored. Avoid relying on them when authoring new personas here.
+These agents do not support `hooks`, `mcpServers`, or `permissionMode` frontmatter — those fields are silently ignored.
 
 ## Adding a new persona
 
